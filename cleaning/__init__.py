@@ -28,11 +28,12 @@ class DataCleaner:
     Delegates to focused sub-modules for each operation type.
     """
 
-    def __init__(self, df: pd.DataFrame, client: str):
+    def __init__(self, df: pd.DataFrame, client: str, protected_cols: list = None):
         self.original_df = df.copy()
         self.df = df.copy()
         self.client = client
         self._history = CleaningHistory()
+        self.protected_cols = protected_cols or []
 
         create_folder_structure(client)
         paths = get_paths(client)
@@ -83,12 +84,13 @@ class DataCleaner:
 
     def drop_columns(self, columns: list):
         cb, rb = len(self.df.columns), len(self.df)
+        columns = [c for c in columns if c not in self.protected_cols]
         self.df, dropped = col_ops.drop_by_name(self.df, columns)
         self._record("drop_columns", f"Dropped: {dropped[:3]}{'...' if len(dropped)>3 else ''}", cb, rb)
 
     def drop_columns_by_prefix(self, prefixes: list):
         cb, rb = len(self.df.columns), len(self.df)
-        self.df, dropped = col_ops.drop_by_prefix(self.df, prefixes)
+        self.df, dropped = col_ops.drop_by_prefix(self.df, prefixes, exclude=self.protected_cols)
         self._record("drop_columns_by_prefix", f"Prefixes: {prefixes}", cb, rb)
 
     def drop_columns_by_suffix(self, suffixes: list):
@@ -103,12 +105,14 @@ class DataCleaner:
 
     def drop_columns_by_missing(self, threshold: float = 50, exclude: list = None):
         cb, rb = len(self.df.columns), len(self.df)
-        self.df, dropped = col_ops.drop_by_missing(self.df, threshold, exclude)
+        combined_exclude = list(set((exclude or []) + self.protected_cols))
+        self.df, dropped = col_ops.drop_by_missing(self.df, threshold, combined_exclude)
         self._record("drop_columns_by_missing", f"Threshold: {threshold}%", cb, rb)
 
     def drop_low_variance(self, threshold: float = 0.01, exclude: list = None):
         cb, rb = len(self.df.columns), len(self.df)
-        self.df, dropped = col_ops.drop_low_variance(self.df, threshold, exclude)
+        combined_exclude = list(set((exclude or []) + self.protected_cols))
+        self.df, dropped = col_ops.drop_low_variance(self.df, threshold, combined_exclude)
         self._record("drop_low_variance", f"Threshold: {threshold}", cb, rb)
 
     def keep_columns(self, columns: list, always_keep: list = None):

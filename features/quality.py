@@ -16,7 +16,10 @@ def analyze_missing(df: pd.DataFrame, threshold: float = 50) -> pd.DataFrame:
     """Find columns with missing % above threshold."""
     pct = (df.isnull().sum() / len(df)) * 100
     high = pct[pct > threshold].sort_values(ascending=False)
-    result = pd.DataFrame({'Column': high.index, 'Missing_Pct': high.values}).reset_index(drop=True)
+    if len(high) > 0:
+        result = pd.DataFrame({'Column': high.index, 'Missing_Pct': high.values}).reset_index(drop=True)
+    else:
+        result = pd.DataFrame(columns=['Column', 'Missing_Pct'])
     print(f"  ✓ Missing analysis: {len(result)} columns above {threshold}%")
     return result
 
@@ -40,7 +43,10 @@ def analyze_variance(df: pd.DataFrame, target: str,
                 'Zero_Pct': round((data == 0).sum() / len(data) * 100, 2),
                 'Mode_Pct': round(mode_pct, 2),
             })
-    result = pd.DataFrame(results).sort_values('Variance').reset_index(drop=True)
+    if results:
+        result = pd.DataFrame(results).sort_values('Variance').reset_index(drop=True)
+    else:
+        result = pd.DataFrame(columns=['Column', 'Variance', 'Zero_Pct', 'Mode_Pct'])
     print(f"  ✓ Variance analysis: {len(result)} low-variance columns")
     return result
 
@@ -54,11 +60,14 @@ def analyze_cardinality(df: pd.DataFrame, threshold: int = 100) -> pd.DataFrame:
          'Pct_of_Rows': round(df[c].nunique() / len(df) * 100, 2)}
         for c in cat_cols if df[c].nunique() > threshold
     ]
-    result = (
-        pd.DataFrame(results)
-        .sort_values('Unique_Values', ascending=False)
-        .reset_index(drop=True)
-    )
+    if results:
+        result = (
+            pd.DataFrame(results)
+            .sort_values('Unique_Values', ascending=False)
+            .reset_index(drop=True)
+        )
+    else:
+        result = pd.DataFrame(columns=['Column', 'Unique_Values', 'Pct_of_Rows'])
     print(f"  ✓ Cardinality analysis: {len(result)} high-cardinality columns")
     return result
 
@@ -73,6 +82,6 @@ def analyze_single_value(df: pd.DataFrame, target: str) -> pd.DataFrame:
         if n_unique <= 1:
             val = df[col].dropna().unique()[0] if n_unique == 1 else None
             results.append({'Column': col, 'Unique_Value': val})
-    result = pd.DataFrame(results)
+    result = pd.DataFrame(results) if results else pd.DataFrame(columns=['Column', 'Unique_Value'])
     print(f"  ✓ Single-value analysis: {len(result)} constant columns")
     return result

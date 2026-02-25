@@ -97,13 +97,24 @@ def _load_uploaded_file(uploaded, file_mb: float, client: str, client_path: str)
         save_dir = os.path.join(client_path, "data", "raw")
         os.makedirs(save_dir, exist_ok=True)
         parquet_path = os.path.join(save_dir, "ingested_data.parquet")
+
+        # Coerce object columns that look numeric before saving to parquet
+        for col in df.select_dtypes("object").columns:
+            try:
+                converted = pd.to_numeric(df[col], errors="coerce")
+                if converted.notna().sum() / len(df) > 0.8:
+                    df[col] = converted
+            except Exception:
+                pass
+
         df.to_parquet(parquet_path, index=False)
 
         # ── Update session state ──────────────────────────────────────────────
-        st.session_state.df        = df
-        st.session_state.df_clean  = df.copy()
-        st.session_state.cleaner   = None
-        st.session_state.target    = ""   # reset — user must re-select
+        st.session_state.df           = df
+        st.session_state.df_clean     = df.copy()
+        st.session_state.cleaner      = None
+        st.session_state.target       = ""   # reset — user must re-select
+        st.session_state.screener_df  = None  # clear stale screener results
 
         _add_log(
             f"Loaded {uploaded.name} — "
@@ -319,10 +330,11 @@ def _find_binary_col(df: pd.DataFrame) -> str | None:
 
 def _stratified_sample(df: pd.DataFrame, strata_col: str, n: int) -> pd.DataFrame:
     """Stratified sample preserving class proportions of strata_col."""
-    groups = df.groupby(strata_col, group_keys=False)
+    frac = n / len(df)
     return (
-        groups.apply(lambda g: g.sample(frac=n / len(df), random_state=42))
-              .reset_index(drop=True)
+        df.groupby(strata_col, group_keys=False)
+          .apply(lambda g: g.sample(frac=frac, random_state=42), include_groups=False)
+          .reset_index(drop=True)
     )
 
 

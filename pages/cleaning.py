@@ -230,6 +230,7 @@ def _init_cleaner():
         st.session_state.cleaner  = DataCleaner(
             st.session_state.df_clean,
             client=st.session_state.client,
+            protected_cols=[st.session_state.target] if st.session_state.target else [],
         )
 
 

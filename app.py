@@ -38,7 +38,7 @@ def _init():
         "selector":    None,
         "trainer":     None,
         "evaluator":   None,
-        "target":      "IsTarget",
+        "target":      "",  # set by user on ingestion page
         "test_size":   0.30,
         "log":         [],
     }

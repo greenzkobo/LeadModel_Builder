@@ -13,6 +13,11 @@ from ui.components import divider
 def render_screener(df: pd.DataFrame, target: str):
     """Render the full column screener tab."""
 
+    # Guard — block if no valid target is selected
+    if not target or target not in df.columns:
+        st.warning("⚠️ No target column selected. Go to **Data Ingestion** and select your target column before running the screener.")
+        return
+
     st.markdown("Score every feature across 4 signals and get drop suggestions.")
 
     # ── Config ────────────────────────────────────────────────
@@ -155,6 +160,9 @@ def _show_confirm(scored: pd.DataFrame, df: pd.DataFrame):
     # Pre-populate multiselect with suggested drops
     all_features = [c for c in df.columns
                     if c != st.session_state.get('target', 'IsTarget')]
+
+    # Filter suggested drops against current columns to avoid stale session state crash
+    suggested_drops = [c for c in suggested_drops if c in df.columns]
 
     confirmed_drops = st.multiselect(
         f"Columns to drop ({len(suggested_drops)} suggested — add or remove as needed)",

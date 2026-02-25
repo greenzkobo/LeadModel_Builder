@@ -25,11 +25,12 @@ def drop_by_name(df: pd.DataFrame, columns: list) -> tuple:
     return df, existing
 
 
-def drop_by_prefix(df: pd.DataFrame, prefixes: list) -> tuple:
+def drop_by_prefix(df: pd.DataFrame, prefixes: list, exclude: list = None) -> tuple:
     """Drop columns starting with any of the given prefixes."""
+    exclude = exclude or []
     cols = []
     for prefix in prefixes:
-        cols.extend(c for c in df.columns if c.startswith(prefix))
+        cols.extend(c for c in df.columns if c.startswith(prefix) and c not in exclude)
     cols = list(set(cols))
 
     if cols:

@@ -54,10 +54,14 @@ def render():
     train_n = int(n_rows * (1 - st.session_state.test_size))
     val_n   = n_rows - train_n
 
-    col1, col2, col3 = st.columns(3)
+    n_features = len([c for c in df.columns if c != target])
+
+    col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Total rows",       f"{n_rows:,}")
     col2.metric("Training rows",    f"{train_n:,}")
     col3.metric("Validation rows",  f"{val_n:,}")
+    col4.metric("Total columns",    f"{len(df.columns):,}")
+    col5.metric("Feature columns",  f"{n_features:,}", help="Excludes target column")
 
     divider()
 
