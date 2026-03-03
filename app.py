@@ -38,7 +38,7 @@ def _init():
         "selector":    None,
         "trainer":     None,
         "evaluator":   None,
-        "target":      "",  # set by user on ingestion page
+        "target":      "IsTarget",
         "test_size":   0.30,
         "log":         [],
     }
@@ -105,3 +105,5 @@ elif page == "data_explorer":
 
 else:
     st.error(f"Unknown page: {page}")
+
+    #py -m streamlit run app.py

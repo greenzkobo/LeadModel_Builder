@@ -38,7 +38,7 @@ def render():
             )
 
             if choice == "➕ Create new client":
-                new_name = st.text_input("New client name", placeholder="e.g. HISC_TEST")
+                new_name = st.text_input("New client name", placeholder="e.g. Client_1")
                 if st.button("Create", type="primary"):
                     if new_name.strip():
                         create_folder_structure(new_name.strip())
@@ -54,7 +54,7 @@ def render():
                     st.rerun()
         else:
             st.info("No clients found. Create one below.")
-            new_name = st.text_input("New client name", placeholder="e.g. HISC_TEST")
+            new_name = st.text_input("New client name", placeholder="e.g Client_1")
             if st.button("Create Client", type="primary"):
                 if new_name.strip():
                     create_folder_structure(new_name.strip())

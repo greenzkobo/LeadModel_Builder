@@ -68,7 +68,7 @@ def render():
         st.markdown("**By prefix**")
         prefix_input = st.text_input(
             "Prefixes (comma-separated)",
-            placeholder="e.g.  ind_1_, member_2_, tw_",
+            placeholder="unwanted_Column_1,unwanted_Column2",
         )
         if st.button("Drop by Prefix", disabled=not prefix_input.strip()):
             prefixes = [p.strip() for p in prefix_input.split(",") if p.strip()]
@@ -172,7 +172,7 @@ def render():
                     st.caption("✅ Saved")
                 else:
                     st.text_input(f"Label for {slot}",
-                                  placeholder="e.g. after_tw_drop",
+                                  placeholder="e.g. unwanted",
                                   key=f"label_{slot}",
                                   label_visibility="collapsed")
             with col3:
