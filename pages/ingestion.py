@@ -21,7 +21,7 @@ from ui.components import page_header, divider, success, warn, error
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 SIZE_LIMIT_MB   = 200          # warn / sample above this
-SAMPLE_ROWS     = 150_000      # target row count when sampling
+SAMPLE_ROWS     = 1_000      # target row count when sampling
 PREVIEW_ROWS    = 5
 
 
@@ -97,24 +97,20 @@ def _load_uploaded_file(uploaded, file_mb: float, client: str, client_path: str)
         save_dir = os.path.join(client_path, "data", "raw")
         os.makedirs(save_dir, exist_ok=True)
         parquet_path = os.path.join(save_dir, "ingested_data.parquet")
-
-        # Coerce object columns that look numeric before saving to parquet
-        for col in df.select_dtypes("object").columns:
-            try:
-                converted = pd.to_numeric(df[col], errors="coerce")
-                if converted.notna().sum() / len(df) > 0.8:
-                    df[col] = converted
-            except Exception:
-                pass
-
         df.to_parquet(parquet_path, index=False)
 
+        # ── Convert string columns that are actually numeric ─────────────────
+        for col in df.columns:
+            if df[col].dtype == object:
+                converted = pd.to_numeric(df[col], errors="coerce")
+                if converted.notna().sum() > 0.9 * len(df):
+                    df[col] = converted
+
         # ── Update session state ──────────────────────────────────────────────
-        st.session_state.df           = df
-        st.session_state.df_clean     = df.copy()
-        st.session_state.cleaner      = None
-        st.session_state.target       = ""   # reset — user must re-select
-        st.session_state.screener_df  = None  # clear stale screener results
+        st.session_state.df        = df
+        st.session_state.df_clean  = df.copy()
+        st.session_state.cleaner   = None
+        st.session_state.target    = ""   # reset — user must re-select
 
         _add_log(
             f"Loaded {uploaded.name} — "
@@ -330,11 +326,10 @@ def _find_binary_col(df: pd.DataFrame) -> str | None:
 
 def _stratified_sample(df: pd.DataFrame, strata_col: str, n: int) -> pd.DataFrame:
     """Stratified sample preserving class proportions of strata_col."""
-    frac = n / len(df)
+    groups = df.groupby(strata_col, group_keys=False)
     return (
-        df.groupby(strata_col, group_keys=False)
-          .apply(lambda g: g.sample(frac=frac, random_state=42), include_groups=False)
-          .reset_index(drop=True)
+        groups.apply(lambda g: g.sample(frac=n / len(df), random_state=42), include_groups=False)
+              .reset_index(drop=True)
     )
 
 
