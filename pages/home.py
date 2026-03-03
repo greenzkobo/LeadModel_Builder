@@ -7,6 +7,7 @@ Home page — client selection, session status, quick actions.
 import streamlit as st
 from ui.components import page_header, divider, success, warn, step_status
 
+from pages.ingestion import SAMPLE_ROWS
 
 def render():
     page_header("Home", "Select a client and manage your session")
