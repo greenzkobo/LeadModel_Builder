@@ -22,7 +22,7 @@ from ui.components import page_header, divider, success, warn, error
 # ── Constants ──────────────────────────────────────────────────────────────────
 SIZE_LIMIT_MB   = 200          # warn / sample above this
 SAMPLE_ROWS     = 10000      # target row count when sampling
-PREVIEW_ROWS    = 5
+PREVIEW_ROWS    = 10
 
 
 # ══════════════════════════════════════════════════════════════════════════════

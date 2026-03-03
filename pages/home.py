@@ -129,9 +129,9 @@ def render():
 
     # ── Sample dataset ─────────────────────────────────────────
     st.markdown("#### Try with Sample Data")
-    st.caption(
-        "No file to upload? Load a built-in sample dataset (100 rows × 20 columns, "        "binary classification) to explore the full pipeline immediately."
-    )
+    st.caption(f"No file to upload? Load a built-in sample dataset ({SAMPLE_ROWS:,} rows × 20 columns, "
+f"binary classification) to explore the full pipeline immediately.")
+       
     if st.button("📊  Load Sample Dataset", use_container_width=False):
         _load_sample_data()
 
