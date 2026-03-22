@@ -7,6 +7,11 @@ Model comparison bar chart (Lift / AUC / KS) and confusion matrices.
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+try:
+    from ui.chart_style import apply as _apply_style, get_colors
+    _apply_style()
+except Exception:
+    pass
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
 

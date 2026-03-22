@@ -1,152 +1,120 @@
 """
 ui/sidebar.py
 ==============
-Sidebar navigation + live session status.
-Called once per render from app.py.
+Professional sidebar with branding, navigation, and pipeline progress.
 """
 
 import streamlit as st
-from ui.components import badge
+
+
+# ── Nav structure ──────────────────────────────────────────────
+NAV_SECTIONS = [
+    ("DATA", [
+        ("📂", "Ingestion",         "ingestion"),
+        ("🧹", "Cleaning",          "cleaning"),
+        ("🔎", "Data Explorer",     "data_explorer"),
+        ("🧩", "Segmentation",      "segmentation"),
+    ]),
+    ("MODELLING", [
+        ("🔍", "Feature Selection", "features"),
+        ("🤖", "Training",          "training"),
+        ("📊", "Evaluation",        "evaluation"),
+        ("📈", "Visualizations",    "visualizations"),
+    ]),
+    ("OUTPUT", [
+        ("📤", "Export",            "export"),
+        ("⚡", "Auto-Run",          "autorun"),
+    ]),
+    ("SYSTEM", [
+        ("⚙️", "Settings",          "settings"),
+        ("📋", "Activity Log",      "log"),
+    ]),
+]
+
+PIPELINE_STEPS = ["df", "df_clean", "selector", "trainer", "evaluator"]
 
 
 def render():
-    """Render the full sidebar."""
     with st.sidebar:
-        # ── Logo / title ──────────────────────────────────────
+        _render_brand()
+        _render_nav()
+        _render_pipeline_progress()
+
+
+def _render_brand():
+    client = st.session_state.get("client") or ""
+    client_html = (
+        f'<div class="sidebar-client-pill">⬡ {client}</div>'
+        if client else
+        '<div class="sidebar-client-pill" style="opacity:0.4">No client selected</div>'
+    )
+    st.markdown(
+        f'<div class="sidebar-brand">'
+        f'  <div class="sidebar-brand-name">LeadModel Builder</div>'
+        f'  <div class="sidebar-brand-sub">ML Modeling Toolkit</div>'
+        f'  {client_html}'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # Home button
+    if st.button("🏠  Home", key="nav_home",
+                 use_container_width=True):
+        st.session_state.page = "home"
+        st.rerun()
+
+
+def _render_nav():
+    current = st.session_state.get("page", "home")
+
+    for section_label, items in NAV_SECTIONS:
         st.markdown(
-            '<div style="padding: 0 0.5rem 1rem;">'
-            '<div style="font-size:1.1rem;font-weight:700;color:#f1f5f9;">⚡ ML Toolkit</div>'
-            '<div style="font-size:0.72rem;color:#475569;margin-top:2px;">Modeling Workspace</div>'
-            '</div>',
+            f'<div class="sidebar-section">{section_label}</div>',
             unsafe_allow_html=True,
         )
+        for icon, label, page_key in items:
+            _step_complete = _is_step_available(page_key)
+            dot = " ✓" if _step_complete else ""
+            btn_label = f"{icon}  {label}{dot}"
 
-        # ── Client status ──────────────────────────────────────
-        client = st.session_state.get("client")
-        if client:
-            st.markdown(
-                f'<div style="background:#1e293b;border-radius:8px;padding:0.6rem 0.85rem;'
-                f'margin-bottom:1rem;font-size:0.82rem;">'
-                f'<div style="color:#64748b;font-size:0.7rem;text-transform:uppercase;'
-                f'letter-spacing:0.05em;margin-bottom:3px;">Active Client</div>'
-                f'<div style="color:#f1f5f9;font-weight:600;">{client}</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                '<div style="background:#1e293b;border-radius:8px;padding:0.6rem 0.85rem;'
-                'margin-bottom:1rem;font-size:0.82rem;color:#475569;">'
-                'No client selected</div>',
-                unsafe_allow_html=True,
-            )
-
-        # ── Navigation ─────────────────────────────────────────
-        st.markdown(
-            '<div style="font-size:0.7rem;color:#475569;text-transform:uppercase;'
-            'letter-spacing:0.06em;padding:0 0.5rem;margin-bottom:0.4rem;">Pipeline</div>',
-            unsafe_allow_html=True,
-        )
-
-        nav_items = [
-            ("🏠", "Home",            "home"),
-            ("📂", "Data Ingestion",  "ingestion"),
-            ("🧹", "Data Cleaning",    "cleaning"),
-            ("🔎", "Data Explorer",    "data_explorer"),
-            ("🔍", "Feature Selection","features"),
-            ("🤖", "Model Training",  "training"),
-            ("📊", "Evaluation",      "evaluation"),
-            ("📈", "Visualizations",  "visualizations"),
-            ("📤", "Export",          "export"),
-        ]
-
-        for icon, label, page_key in nav_items:
-            status_dot = _nav_dot(page_key)
-            if st.button(
-                f"{icon}  {label}{status_dot}",
-                key=f"nav_{page_key}",
-                use_container_width=True,
-            ):
+            if st.button(btn_label, key=f"nav_{page_key}",
+                         use_container_width=True):
                 st.session_state.page = page_key
                 st.rerun()
 
-        st.markdown('<div style="height:1rem;"></div>', unsafe_allow_html=True)
-        st.markdown(
-            '<div style="font-size:0.7rem;color:#475569;text-transform:uppercase;'
-            'letter-spacing:0.06em;padding:0 0.5rem;margin-bottom:0.4rem;">Tools</div>',
-            unsafe_allow_html=True,
-        )
 
-        if st.button("⚙️  Settings", key="nav_settings", use_container_width=True):
-            st.session_state.page = "settings"
-            st.rerun()
+def _render_pipeline_progress():
+    completed = sum(
+        1 for key in PIPELINE_STEPS
+        if st.session_state.get(key) is not None
+    )
+    total = len(PIPELINE_STEPS)
+    pct   = int(completed / total * 100)
 
-        if st.button("🚀  Auto-Run", key="nav_autorun", use_container_width=True):
-            st.session_state.page = "autorun"
-            st.rerun()
-
-        if st.button("📋  Activity Log", key="nav_log", use_container_width=True):
-            st.session_state.page = "log"
-            st.rerun()
-
-        # ── Pipeline progress ──────────────────────────────────
-        st.markdown('<div style="height:1.5rem;"></div>', unsafe_allow_html=True)
-        _pipeline_status()
+    st.markdown(
+        f'<div class="sidebar-progress">'
+        f'  <div class="sidebar-progress-label">Pipeline Progress</div>'
+        f'  <div class="sidebar-progress-bar-bg">'
+        f'    <div class="sidebar-progress-bar-fill" style="width:{pct}%"></div>'
+        f'  </div>'
+        f'  <div class="sidebar-progress-steps">{completed} / {total} steps complete</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
 
-def _nav_dot(page_key: str) -> str:
-    """Return a status indicator for nav items based on session state."""
-    s = st.session_state
+def _is_step_available(page_key: str) -> bool:
+    """Return True if this page's prerequisite state exists."""
     checks = {
-        "ingestion":    s.get("df") is not None,
-        "cleaning":     s.get("df_clean") is not None,
-        "features":     s.get("selector") is not None,
-        "training":     s.get("trainer") is not None,
-        "evaluation":   s.get("evaluator") is not None,
-        "visualizations": s.get("evaluator") is not None,
-        "export":       s.get("evaluator") is not None,
+        "ingestion":   lambda: st.session_state.get("df") is not None,
+        "cleaning":    lambda: st.session_state.get("df") is not None,
+        "data_explorer": lambda: st.session_state.get("df") is not None,
+        "segmentation":  lambda: st.session_state.get("df_clean") is not None,
+        "features":    lambda: st.session_state.get("df_clean") is not None,
+        "training":    lambda: st.session_state.get("df_clean") is not None,
+        "evaluation":  lambda: st.session_state.get("trainer") is not None,
+        "visualizations": lambda: st.session_state.get("evaluator") is not None,
+        "export":      lambda: st.session_state.get("evaluator") is not None,
     }
-    if page_key in checks:
-        return "  ✓" if checks[page_key] else ""
-    return ""
-
-
-def _pipeline_status():
-    """Mini pipeline checklist at the bottom of the sidebar."""
-    s = st.session_state
-    steps = [
-        ("Client",          s.get("client") is not None),
-        ("Data loaded",     s.get("df") is not None),
-        ("Data cleaned",    s.get("df_clean") is not None),
-        ("Features",        s.get("selector") is not None),
-        ("Models trained",  s.get("trainer") is not None),
-        ("Evaluated",       s.get("evaluator") is not None),
-    ]
-
-    done  = sum(1 for _, v in steps if v)
-    total = len(steps)
-
-    st.markdown(
-        f'<div style="font-size:0.7rem;color:#475569;text-transform:uppercase;'
-        f'letter-spacing:0.06em;padding:0 0.5rem;margin-bottom:0.5rem;">'
-        f'Progress  {done}/{total}</div>',
-        unsafe_allow_html=True,
-    )
-
-    # Progress bar
-    pct = int(done / total * 100)
-    st.markdown(
-        f'<div style="background:#1e293b;border-radius:999px;height:5px;margin:0 0.5rem 0.75rem;">'
-        f'<div style="background:#3b82f6;border-radius:999px;height:5px;width:{pct}%;'
-        f'transition:width 0.3s;"></div></div>',
-        unsafe_allow_html=True,
-    )
-
-    for label, done_flag in steps:
-        icon  = "✅" if done_flag else "⬜"
-        color = "#4ade80" if done_flag else "#334155"
-        st.markdown(
-            f'<div style="font-size:0.78rem;color:{color};padding:1px 0.5rem;">'
-            f'{icon}  {label}</div>',
-            unsafe_allow_html=True,
-        )
+    check = checks.get(page_key)
+    return check() if check else False

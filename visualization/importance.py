@@ -9,6 +9,11 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+try:
+    from ui.chart_style import apply as _apply_style, get_colors
+    _apply_style()
+except Exception:
+    pass
 
 
 def get_model_importance(model, feature_names: list, top_n: int = 20) -> pd.DataFrame:

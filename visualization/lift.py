@@ -8,6 +8,11 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+try:
+    from ui.chart_style import apply as _apply_style, get_colors
+    _apply_style()
+except Exception:
+    pass
 
 
 def _lift_at_decile(y_true, y_prob, decile: int) -> float:
