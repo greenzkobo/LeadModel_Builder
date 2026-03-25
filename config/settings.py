@@ -59,3 +59,7 @@ DEFAULT_MISSING_THRESHOLD     = 50      # % missing to flag
 DEFAULT_VARIANCE_THRESHOLD    = 0.01    # near-zero variance cutoff
 DEFAULT_CARDINALITY_THRESHOLD = 100     # unique values for high cardinality
 DEFAULT_COLLINEARITY_THRESHOLD = 0.85
+
+# ── Data sampling defaults ─────────────────────────────────────────────────────
+DEFAULT_SAMPLE_ROWS  = 50_000   # rows to sample when file exceeds SIZE_LIMIT_MB
+DEFAULT_SIZE_LIMIT_MB = 200     # file size threshold that triggers sampling
