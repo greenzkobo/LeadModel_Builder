@@ -376,10 +376,10 @@ def _render_sample_datasets(client: str, client_path: str):
 
     info = get_dataset_info(selected)
     st.markdown(
-        f'<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;'
-        f'padding:0.75rem 1rem;font-size:0.83rem;color:#475569;margin:0.5rem 0;">'
+        f'<div style="background:#1C2433;border:1px solid #30363D;border-radius:8px;'
+        f'padding:0.75rem 1rem;font-size:0.83rem;color:#B0BABF;margin:0.5rem 0;">'
         f'{info.get("description", "")}'
-        f'<br><br><span style="color:#94A3B8;font-size:0.75rem;">'
+        f'<br><br><span style="color:#7D8590;font-size:0.75rem;">'
         f'Tags: {" · ".join(info.get("tags", []))}'
         f'</span></div>',
         unsafe_allow_html=True,
