@@ -7,6 +7,15 @@ Palette: Deep navy (#0B1F3A) + White + Slate accents + Emerald highlights
 """
 
 CSS = """
+/* ── Scrolling fix ───────────────────────────────────── */
+[data-testid="stAppViewContainer"] > section:first-child {
+    overflow-y: auto !important;
+}
+section.main > div {
+    overflow-y: auto !important;
+    max-height: 100vh !important;
+}
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
@@ -47,6 +56,10 @@ html, body, [class*="css"] {
 }
 
 /* ── Main content area ───────────────────────────────── */
+.main {
+    overflow-y: auto !important;
+    height: 100vh !important;
+}
 .main .block-container {
     padding-top: 2rem !important;
     padding-left: 2.5rem !important;
