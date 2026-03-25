@@ -351,9 +351,14 @@ def _add_log(msg: str):
 def _render_sample_datasets(client: str, client_path: str):
     """Sample dataset section — pick a curated dataset, choose rows, load."""
     try:
-        import sys, os
-        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from data.sample_datasets import list_datasets, get_dataset_info, load_dataset
+        import sys, os, importlib.util
+        _path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "sample_datasets.py")
+        _spec = importlib.util.spec_from_file_location("sample_datasets", _path)
+        _mod  = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        list_datasets  = _mod.list_datasets
+        get_dataset_info = _mod.get_dataset_info
+        load_dataset   = _mod.load_dataset
     except Exception as e:
         st.warning(f"Sample datasets unavailable: {e}")
         return
