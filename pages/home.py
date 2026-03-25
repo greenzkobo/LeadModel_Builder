@@ -7,7 +7,6 @@ Home page — client selection, session status, quick actions.
 import streamlit as st
 from ui.components import page_header, divider, success, warn, step_status
 
-from pages.ingestion import SAMPLE_ROWS
 
 def render():
     page_header("Home", "Select a client and manage your session")
@@ -39,7 +38,7 @@ def render():
             )
 
             if choice == "➕ Create new client":
-                new_name = st.text_input("New client name", placeholder="e.g. Client_1")
+                new_name = st.text_input("New client name", placeholder="e.g. HISC_TEST")
                 if st.button("Create", type="primary"):
                     if new_name.strip():
                         create_folder_structure(new_name.strip())
@@ -55,7 +54,7 @@ def render():
                     st.rerun()
         else:
             st.info("No clients found. Create one below.")
-            new_name = st.text_input("New client name", placeholder="e.g Client_1")
+            new_name = st.text_input("New client name", placeholder="e.g. HISC_TEST")
             if st.button("Create Client", type="primary"):
                 if new_name.strip():
                     create_folder_structure(new_name.strip())
@@ -100,7 +99,8 @@ def render():
         {"label": "Evaluation",       "status": "done" if s.evaluator is not None else ("ready" if s.trainer is not None else "wait")},
         {"label": "Export",           "status": "ready" if s.evaluator is not None else "wait"},
     ]
-    step_status(pipeline_steps)
+    for step in pipeline_steps:
+        step_status(step["label"], step["status"])
 
     divider()
 
@@ -126,16 +126,6 @@ def render():
         else:
             st.button("📤  Export Winner", use_container_width=True, disabled=True)
 
-    divider()
-
-    # ── Sample dataset ─────────────────────────────────────────
-    st.markdown("#### Try with Sample Data")
-    st.caption(f"No file to upload? Load a built-in sample dataset ({SAMPLE_ROWS:,} rows × 20 columns, "
-f"binary classification) to explore the full pipeline immediately.")
-       
-    if st.button("📊  Load Sample Dataset", use_container_width=False):
-        _load_sample_data()
-
     # ── Activity log preview ───────────────────────────────────
     if st.session_state.log:
         divider()
@@ -146,75 +136,12 @@ f"binary classification) to explore the full pipeline immediately.")
 
 def _set_client(name: str, path: str):
     """Set client and reset all data state."""
-    st.session_state.client       = name
-    st.session_state.client_path  = path
-    st.session_state.df           = None
-    st.session_state.df_clean     = None
-    st.session_state.cleaner      = None
-    st.session_state.selector     = None
-    st.session_state.trainer      = None
-    st.session_state.evaluator    = None
-    st.session_state.target       = ""
-    st.session_state.screener_df  = None
-    st.session_state.log          = []
-
-
-def _load_sample_data():
-    """Load the UCI Adult Income sample dataset (100 rows x 20 columns)."""
-    import pandas as pd
-    import os
-
-    if not st.session_state.client:
-        warn("Please select or create a client first.")
-        return
-
-    try:
-        # Fetch from UCI via URL — trimmed to 100 rows x 20 cols
-        url = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
-        col_names = [
-            "age", "workclass", "fnlwgt", "education", "education_num",
-            "marital_status", "occupation", "relationship", "race", "sex",
-            "capital_gain", "capital_loss", "hours_per_week", "native_country",
-            "income", "dummy1", "dummy2", "dummy3", "dummy4", "dummy5",
-        ]
-
-        with st.spinner("Loading sample dataset..."):
-            df_full = pd.read_csv(url, header=None, nrows=200, skipinitialspace=True)
-
-        # Trim to 20 columns and 100 rows
-        df_full.columns = col_names[:len(df_full.columns)]
-        df = df_full.iloc[:100, :20].copy()
-
-        # Create binary target: income >50K = 1
-        if "income" in df.columns:
-            df["IsTarget"] = (df["income"].str.strip() == ">50K").astype(int)
-            df = df.drop(columns=["income"])
-        else:
-            df["IsTarget"] = 0
-
-        # Encode object columns as category codes so everything is numeric-friendly
-        for col in df.select_dtypes("object").columns:
-            df[col] = df[col].astype("category").cat.codes
-
-        # Save to client folder as parquet
-        save_dir = os.path.join(st.session_state.client_path, "data", "raw")
-        os.makedirs(save_dir, exist_ok=True)
-        df.to_parquet(os.path.join(save_dir, "ingested_data.parquet"), index=False)
-
-        # Update session state
-        st.session_state.df           = df
-        st.session_state.df_clean     = df.copy()
-        st.session_state.cleaner      = None
-        st.session_state.target       = "IsTarget"
-        st.session_state.screener_df  = None
-
-        import datetime
-        st.session_state.log.append(
-            f"[{datetime.datetime.now().strftime('%H:%M:%S')}] "            f"Loaded sample dataset — {len(df):,} rows x {len(df.columns):,} cols"
-        )
-
-        success(f"Sample dataset loaded — {len(df):,} rows x {len(df.columns):,} columns. Target set to IsTarget.")
-        st.rerun()
-
-    except Exception as e:
-        st.error(f"Could not load sample dataset: {e}")
+    st.session_state.client      = name
+    st.session_state.client_path = path
+    st.session_state.df          = None
+    st.session_state.df_clean    = None
+    st.session_state.cleaner     = None
+    st.session_state.selector    = None
+    st.session_state.trainer     = None
+    st.session_state.evaluator   = None
+    st.session_state.log         = []

@@ -349,6 +349,7 @@ div[data-testid="stSidebar"] .stButton > button:focus {
     color: #92400E;
 }
 .alert-error {
+    color: #991B1B !important;
     background: var(--red-lt);
     border: 1px solid #FECACA;
     color: #991B1B;
