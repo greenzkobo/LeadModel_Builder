@@ -61,53 +61,41 @@ page = st.session_state.page
 if page == "home":
     from pages.home import render
     render()
-
 elif page == "ingestion":
     from pages.ingestion import render
     render()
-
 elif page == "cleaning":
     from pages.cleaning import render
-    render()
-
-elif page == "features":
-    from pages.features import render
-    render()
-
-elif page == "training":
-    from pages.training import render
-    render()
-
-elif page == "evaluation":
-    from pages.evaluation import render
-    render()
-
-elif page == "visualizations":
-    from pages.visualizations import render
-    render()
-
-elif page == "export":
-    from pages.export import render
-    render()
-
-elif page == "settings":
-    from pages.settings import render
-    render()
-
-elif page == "autorun":
-    from pages.autorun import render
-    render()
-
-elif page == "log":
-    from pages.log import render
-    render()
-
-else:
-    st.error(f"Unknown page: {page}")
-
-elif page == "segmentation":
-    from pages.segmentation import render
     render()
 elif page == "data_explorer":
     from pages.data_explorer import render
     render()
+elif page == "segmentation":
+    from pages.segmentation import render
+    render()
+elif page == "features":
+    from pages.features import render
+    render()
+elif page == "training":
+    from pages.training import render
+    render()
+elif page == "evaluation":
+    from pages.evaluation import render
+    render()
+elif page == "visualizations":
+    from pages.visualizations import render
+    render()
+elif page == "export":
+    from pages.export import render
+    render()
+elif page == "settings":
+    from pages.settings import render
+    render()
+elif page == "autorun":
+    from pages.autorun import render
+    render()
+elif page == "log":
+    from pages.log import render
+    render()
+else:
+    st.error(f"Unknown page: {page}")
