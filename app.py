@@ -23,8 +23,9 @@ st.set_page_config(
 )
 
 # ── Inject styles ──────────────────────────────────────────────────────────────
-from ui.styles import inject
+from ui.styles import inject, inject_scroll
 inject()
+inject_scroll()
 
 # ── Session state init ─────────────────────────────────────────────────────────
 def _init():
@@ -40,6 +41,8 @@ def _init():
         "evaluator":   None,
         "target":      "IsTarget",
         "test_size":   0.30,
+        "sample_rows": 50_000,
+        "size_limit_mb": 200,
         "log":         [],
     }
     for k, v in defaults.items():
@@ -99,11 +102,12 @@ elif page == "log":
     from pages.log import render
     render()
 
-elif page == "data_explorer":
-    from pages.data_explorer import render
-    render()
-
 else:
     st.error(f"Unknown page: {page}")
 
-    #py -m streamlit run app.py
+elif page == "segmentation":
+    from pages.segmentation import render
+    render()
+elif page == "data_explorer":
+    from pages.data_explorer import render
+    render()

@@ -20,9 +20,9 @@ import pandas as pd
 from ui.components import page_header, divider, success, warn, error
 
 # ── Constants ──────────────────────────────────────────────────────────────────
-SIZE_LIMIT_MB   = 200          # warn / sample above this
-SAMPLE_ROWS     = 50000      # target row count when sampling
-PREVIEW_ROWS    = 10
+# SIZE_LIMIT_MB is now read from st.session_state.size_limit_mb (set in Settings page)
+# SAMPLE_ROWS is now read from st.session_state.sample_rows (set in Settings page)
+PREVIEW_ROWS    = 5
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -40,15 +40,15 @@ def render():
     st.markdown("#### Upload File")
     st.caption(
         "Accepts CSV or tab / pipe-delimited TXT files. "
-        f"**Files larger than {SIZE_LIMIT_MB} MB will be automatically sampled "
-        f"to {SAMPLE_ROWS:,} rows** — model quality is not meaningfully affected "
+        f"**Files larger than {st.session_state.get('size_limit_mb', 200)} MB will be automatically sampled "
+        f"to {st.session_state.get('sample_rows', 50_000):,} rows** — model quality is not meaningfully affected "
         "above ~100 k rows. For scoring the full file use the exported scoring script."
     )
 
     uploaded = st.file_uploader(
         "Drag and drop your data file here",
         type=["csv", "txt"],
-        help=f"Max recommended size: {SIZE_LIMIT_MB} MB. Larger files are sampled automatically.",
+        help=f"Max recommended size: {st.session_state.get('size_limit_mb', 200)} MB. Larger files are sampled automatically.",
     )
 
     if uploaded:
@@ -57,6 +57,10 @@ def render():
 
         if st.button("Load File", type="primary"):
             _load_uploaded_file(uploaded, file_mb, client, client_path)
+
+    # ── Sample dataset loader ──────────────────────────────────────────────────
+    divider()
+    _render_sample_datasets(client, client_path)
 
     # ── Data summary + target selector (shown once data is in session) ─────────
     if st.session_state.df is not None:
@@ -86,10 +90,10 @@ def _load_uploaded_file(uploaded, file_mb: float, client: str, client_path: str)
             delimiter = _detect_delimiter(raw_bytes)
             encoding  = _detect_encoding(raw_bytes)
 
-        needs_sampling = file_mb > SIZE_LIMIT_MB
+        needs_sampling = file_mb > st.session_state.get("size_limit_mb", 200)
 
         with st.spinner("Loading data…" if not needs_sampling else
-                        f"File exceeds {SIZE_LIMIT_MB} MB — reading in chunks and sampling…"):
+                        f"File exceeds {st.session_state.get('size_limit_mb', 200)} MB — reading in chunks and sampling…"):
 
             df = _read_csv_safe(raw_bytes, delimiter, encoding, needs_sampling)
 
@@ -167,16 +171,17 @@ def _read_csv_safe(
 
     df_full = pd.concat(chunks, ignore_index=True)
 
-    if len(df_full) <= SAMPLE_ROWS:
+    n = st.session_state.get("sample_rows", 50_000)
+    if len(df_full) <= n:
         return df_full
 
     # Stratified sample — try to use first plausible binary column as strata,
     # fall back to plain random sample if none found
     strata_col = _find_binary_col(df_full)
     if strata_col:
-        df = _stratified_sample(df_full, strata_col, SAMPLE_ROWS)
+        df = _stratified_sample(df_full, strata_col, n)
     else:
-        df = df_full.sample(n=SAMPLE_ROWS, random_state=42).reset_index(drop=True)
+        df = df_full.sample(n=n, random_state=42).reset_index(drop=True)
 
     return df
 
@@ -337,3 +342,82 @@ def _add_log(msg: str):
     st.session_state.log.append(
         f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}"
     )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Sample dataset loader
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _render_sample_datasets(client: str, client_path: str):
+    """Sample dataset section — pick a curated dataset, choose rows, load."""
+    try:
+        import sys, os
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from data.sample_datasets import list_datasets, get_dataset_info, load_dataset
+    except Exception as e:
+        st.warning(f"Sample datasets unavailable: {e}")
+        return
+
+    st.markdown("#### 📦 Try a Sample Dataset")
+    st.caption("No file to upload? Load a curated dataset to explore the full pipeline.")
+
+    datasets   = list_datasets()
+    selected   = st.radio(
+        "Choose a dataset",
+        datasets,
+        key="sample_ds_choice",
+        label_visibility="collapsed",
+    )
+
+    info = get_dataset_info(selected)
+    st.markdown(
+        f'<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;'
+        f'padding:0.75rem 1rem;font-size:0.83rem;color:#475569;margin:0.5rem 0;">'
+        f'{info.get("description", "")}'
+        f'<br><br><span style="color:#94A3B8;font-size:0.75rem;">'
+        f'Tags: {" · ".join(info.get("tags", []))}'
+        f'</span></div>',
+        unsafe_allow_html=True,
+    )
+
+    max_rows = info.get("recommended_rows", 10_000)
+    n_rows   = st.slider(
+        "Number of rows to load",
+        min_value=500,
+        max_value=max_rows,
+        value=min(10_000, max_rows),
+        step=500,
+        key="sample_ds_rows",
+        help=f"Dataset has up to {max_rows:,} rows"
+    )
+
+    if st.button("⬇  Load Sample Dataset", type="primary", key="load_sample_ds"):
+        try:
+            with st.spinner(f"Downloading {selected}..."):
+                df = load_dataset(selected, n_rows=n_rows)
+
+            # Save parquet
+            save_dir = os.path.join(client_path, "data", "raw")
+            os.makedirs(save_dir, exist_ok=True)
+            df.to_parquet(os.path.join(save_dir, "ingested_data.parquet"), index=False)
+
+            st.session_state.df       = df
+            st.session_state.df_clean = df.copy()
+            st.session_state.cleaner  = None
+            st.session_state.target   = "IsTarget"
+
+            _add_log(
+                f"Loaded sample dataset '{selected}' — "
+                f"{len(df):,} rows × {len(df.columns):,} cols"
+            )
+            st.success(
+                f"✓ Loaded **{selected}** — "
+                f"{len(df):,} rows × {len(df.columns):,} columns. "
+                f"Target column set to `IsTarget`."
+            )
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"Could not load dataset: {e}")
+            import traceback
+            st.code(traceback.format_exc())

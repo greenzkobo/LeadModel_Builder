@@ -382,3 +382,23 @@ def inject():
     """Call once at app startup to inject all styles."""
     import streamlit as st
     st.markdown(CSS, unsafe_allow_html=True)
+
+# Patch - inject scroll fix separately
+SCROLL_FIX = """
+<style>
+section[data-testid="stMain"] {
+    overflow-y: auto !important;
+    height: 100vh !important;
+}
+section[data-testid="stMain"] > div {
+    overflow-y: visible !important;
+}
+.main {
+    overflow-y: auto !important;
+}
+</style>
+"""
+
+def inject_scroll():
+    import streamlit as st
+    st.markdown(SCROLL_FIX, unsafe_allow_html=True)
